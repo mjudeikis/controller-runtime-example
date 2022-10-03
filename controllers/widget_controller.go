@@ -59,8 +59,8 @@ func (r *WidgetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	ctx = logicalcluster.WithCluster(ctx, logicalcluster.New(req.ClusterName))
 
 	logger.Info("Getting widget")
-	var w datav1alpha1.Widget
-	if err := r.Get(ctx, req.NamespacedName, &w); err != nil {
+	var widget datav1alpha1.Widget
+	if err := r.Get(ctx, req.NamespacedName, &widget); err != nil {
 		if errors.IsNotFound(err) {
 			// Normal - was deleted
 			return ctrl.Result{}, nil
@@ -77,18 +77,18 @@ func (r *WidgetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	numWidgets := len(list.Items)
 
-	if numWidgets == w.Status.Total {
+	if numWidgets == widget.Status.Total {
 		logger.Info("No need to patch because the widget status is already correct")
 		return ctrl.Result{}, nil
 	}
 
 	logger.Info("Patching widget status to store total widget count in the current logical cluster")
-	original := w.DeepCopy()
-	patch := client.MergeFrom(original)
+	widgetCopy := widget.DeepCopy()
+	patch := client.MergeFrom(&widget)
 
-	w.Status.Total = numWidgets
+	widgetCopy.Status.Total = numWidgets
 
-	if err := r.Status().Patch(ctx, &w, patch); err != nil {
+	if err := r.Status().Patch(ctx, widgetCopy, patch); err != nil {
 		return ctrl.Result{}, err
 	}
 
